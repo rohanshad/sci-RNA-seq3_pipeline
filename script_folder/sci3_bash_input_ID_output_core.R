@@ -1,5 +1,12 @@
+#!/usr/bin/env Rscript
 
 require("BiocParallel")
+methods("bplapply")
+
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+
+# BiocManager::install("BiocParallel")
 
 # accept a input folder, a sample ID file, and a output folder 
 # and a core number and then perform trimming for each file

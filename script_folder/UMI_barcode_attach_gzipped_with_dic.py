@@ -12,6 +12,7 @@ from multiprocessing import Pool
 from functools import partial
 import pickle
 
+
 '''
     this script accept a read1 file, a read2 file, a output_file, a ligation barcode list,
     a oligodT barcode list,
@@ -96,13 +97,13 @@ def UMI_attach_read2_barcode_list(sample, input_folder, output_folder, ligation_
 def attach_UMI_files(input_folder, sampleID, output_folder, ligation_barcode_file, RT_barcode_file, core):
     
     init_message = '''
-    --------------------------start attaching UMI-----------------------------
+    -------------------------- Start attaching UMIs -----------------------------
     input folder: %s
     sample ID: %s
     output_folder: %s
     ligation barcode file: %s
     RT barcode file: %s
-    ___________________________________________________________________________
+    -----------------------------------------------------------------------------
     ''' %(input_folder, sampleID, output_folder, ligation_barcode_file, RT_barcode_file)
     
     print(init_message)
@@ -140,8 +141,11 @@ def attach_UMI_files(input_folder, sampleID, output_folder, ligation_barcode_fil
     p.join()
     
     #print the completion message
-    com_message = '''~~~~~~~~~~~~~~~UMI attachment done~~~~~~~~~~~~~~~~~~'''
+    com_message = '''
+    -------------------------- UMI attachment done ------------------------------
+    '''
     print(com_message)
+
     
 if __name__ == "__main__":
     input_folder = sys.argv[1]

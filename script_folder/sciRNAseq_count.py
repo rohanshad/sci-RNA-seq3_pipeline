@@ -183,10 +183,10 @@ def find_nearest_gene(al_end, gene_id_intersect, gene_end):
         if gene in gene_end:
             gene_id_end[gene] = (abs(np.array(list(gene_end[gene])) - al_end)).min()
         else:
-            print "****************Found one gene without transcript annotation*****************", "Gene name: ", gene
+            print("**************** Found one gene without transcript annotation *****************", "Gene name: ", gene)
     # filter the gene with the least distance. If there are two genes with the least distance, then  "_ambiguous" 
     # would be returned
-    gene_end_min = np.min(gene_id_end.values())
+    gene_end_min = np.min(list(gene_id_end.values()))
     count = 0
     #print ("gene end distance: ", gene_id_end.values())
     for gene in gene_id_end:
@@ -259,9 +259,9 @@ def sciRNA_count_parallel(gtf_file, input_folder, sample_ID, core_number):
                 gene_end[ feature.attr["gene_id"] ] = set()
                 gene_end[ feature.attr["gene_id"] ].add(feature.iv.end_d)
 
-    print("Detected gene number: ", gene_n)
-    print("Detected transcript number: ", transcript_n)
-    print("Detected exon number: ", exon_n)
+    print("Number of detected genes: ", gene_n)
+    print("Number of detected transcripts: ", transcript_n)
+    print("Number of detected exon: ", exon_n)
     
     gene_annotat.close()
     

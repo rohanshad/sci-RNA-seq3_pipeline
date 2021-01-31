@@ -1,19 +1,20 @@
-
 #!/bin/bash
 # the scRNA-seq pipeline accept a input folder, and then use the default parameter for sequencing processing and generating the gene count matrix for downstream analysis
 
 # The script is for processing sci-RNA-seq3 sequencing reads in UW genomic science cluster. For running in other environment, some modules, R and python packages are needed to be installed.
+# Edit each sh file to ensure they have the correct path to python etc 
+# This script uses two environments: sci (python2) and sci3 (python3)
 
 # define the fastq folder including all fastq files
-fastq_folder="/net/shendure/vol10/projects/scRNA/nobackup/171221_sci3_mouse_embryo/fastq/"
+fastq_folder="/oak/stanford/groups/willhies/rna_seq_rawdata/sci_rna_seq3/1_27_21/fastqs_nodemux/demux"
 
 # define the PCR group sample id for each fastq file
-sample_ID="./sample_ID.txt"
+sample_ID="/oak/stanford/groups/willhies/rna_seq_rawdata/sci_rna_seq3/1_27_21/sample_ID.txt"
 
 # define the output folder
-all_output_folder="/net/shendure/vol10/projects/scRNA/nobackup/171221_sci3_mouse_embryo/output"
+all_output_folder="/oak/stanford/groups/willhies/rna_seq_rawdata/sci_rna_seq3/1_27_21/pipeline_output"
 
-# define the core number for parallele processing
+# define the core number for parallel processing
 core=15 # for most steps
 samtools_core=4 # for reads filtering and sorting - this number is normally lower than the core number used in other script
 
@@ -21,27 +22,35 @@ samtools_core=4 # for reads filtering and sorting - this number is normally lowe
 cutoff=200
 
 # define the location of index files for reads alignment with STAR
-index="/net/shendure/vol1/home/cao1025/../../../vol10/projects/scRNA/reference/index/STAR/STAR_mm10_RNAseq/"
+index="/home/groups/willhies/ref_genomes/star_mm10_RNAseq/"
 
 # define the gtf file for gene counting
-gtf_file="/net/shendure/vol1/home/cao1025/reference/gtf_reference/mm10/gencode.vM12.chr_patch_hapl_scaff.annotation.gtf.gz"
+gtf_file="/home/groups/willhies/ref_genomes/gtf_references/gencode.vM25.annotation.gtf.gz"
 
 #define the mismatch rate for removing duplicates:
 mismatch=1
 
 # Define the location of the sub script folder
-script_folder="/net/shendure/vol1/home/cao1025/analysis_script/script_folder/"
+script_folder="/home/users/rshad/sci-RNA-seq3_pipeline/script_folder"
 
 #define the bin of python (python V2.7)
-python_path="/net/shendure/vol1/home/cao1025/anaconda2/bin/"
+source activate sci
+python_path="/home/groups/willhies/anaconda3/envs/sci/bin"
 
 # load required modules from UW GS cluster
-module load modules modules-init modules-gs
-module load samtools/1.4
-module load STAR/2.5.2b
-module load python/2.7.3
-module load cutadapt/1.8.3
-module load trim_galore/0.4.1
+# module load modules modules-init modules-gs
+# module load samtools/1.4
+# module load STAR/2.5.2b
+# module load python/2.7.3
+# module load cutadapt/1.8.3
+# module load trim_galore/0.4.1
+
+### Modules for Stanford Sherlock Cluster ###
+module load biology samtools #default v1.8; option for v1.6
+module load biology star/2.5.4b
+module load biology py-cutadapt #py2.7 version 1.8.3
+module load biology trim_galore #default v0.5.0m
+module load R/4.0
 
 # define the location of the ligation barcodes (they are in the script folder)
 ligation_barcode=$script_folder/lig_384_bc.pickle2
@@ -50,7 +59,7 @@ RT_barcode=$script_folder//RT_384_bc.pickle2
 # define the location of the combined RT and ligation barcodes
 barcodes=$script_folder//combined_384_bc.txt
 # define the location of the R script for multi-core processing
-R_script=$script_folder/sci3_bash_input_ID_output_core.R
+r_script=$script_folder/sci3_bash_input_ID_output_core.R
 script_path=$script_folder
 
 
@@ -63,12 +72,15 @@ echo "Current time : $now"
 input_folder=$fastq_folder
 output_folder=$all_output_folder/UMI_attach
 script=$script_path/UMI_barcode_attach_gzipped_with_dic.py
+
+### Probably don't need to do this for the Data we're getting from GEO, when using own sequencing core might need to do this ###
 echo "Changing the name of the fastq files..."
-for sample in $(cat $sample_ID); do echo changing name $sample; mv $input_folder/*$sample*r1.fq.gz $input_folder/$sample.R1.fastq.gz; mv $input_folder/*$sample*r2.fq.gz $input_folder/$sample.R2.fastq.gz; done
+
+#for sample in $(cat $sample_ID); do echo changing name $sample; mv $input_folder/*$sample*r1.fq.gz $input_folder/$sample.R1.fastq.gz; mv $input_folder/*$sample*r2.fq.gz $input_folder/$sample.R2.fastq.gz; done
 
 echo "Attaching barcode and UMI...."
-mkdir -p $output_folder
-$python_path/python $script $input_folder $sample_ID $output_folder $ligation_barcode $RT_barcode $core
+mkdir -p $output_folder  
+$python_path/python2 $script $input_folder $sample_ID $output_folder $ligation_barcode $RT_barcode $core
 echo "Barcode transformed and UMI attached."
 
 ################# Trimming the read2
@@ -76,11 +88,12 @@ echo
 echo "Start trimming the read2 file..."
 echo $(date)
 
+mkdir $all_output_folder/trimmed_fastq 
 trimmed_fastq=$all_output_folder/trimmed_fastq
 UMI_attached_R2=$all_output_folder/UMI_attach
 bash_script=$script_path/sci3_trim.sh
 
-Rscript $R_script $bash_script $UMI_attached_R2 $sample_ID $trimmed_fastq $core
+$Rscript $r_script $bash_script $UMI_attached_R2 $sample_ID $trimmed_fastq $core
 
 ############align the reads with STAR, filter the reads based on q > 30, and remove duplicates based on UMI sequence and tagmentation site
 
@@ -91,6 +104,7 @@ filtered_sam_folder=$all_output_folder/filtered_sam
 rmdup_sam_folder=$all_output_folder/rmdup_sam
 
 #align read2 to the index file using STAR
+echo ""
 echo "Start alignment using STAR..."
 echo input folder: $input_folder
 echo sample ID file: $sample_ID
@@ -112,8 +126,9 @@ echo
 echo "Start filter and sort the sam files..."
 echo input folder: $STAR_output_folder
 echo output folder: $filtered_sam_folder
+
 bash_script=$script_path/sci3_filter.sh
-Rscript $R_script $bash_script $STAR_output_folder $sample_ID $filtered_sam_folder $samtools_core
+$Rscript $r_script $bash_script $STAR_output_folder $sample_ID $filtered_sam_folder $samtools_core
 
 # make a folder for rmdup_sam_folder, 
 # Then for each filtered sam file, remove the duplicates based on UMI and barcode, chromatin number and position
@@ -129,7 +144,7 @@ module unload python
 
 bash_script=$script_path/sci3_rmdup_nomismatch.sh # for removing duplicates only considering exact match
 ## bash_script=$script_path/sci3_rmdup.sh
-$Rscript $R_script $bash_script $filtered_sam_folder $sample_ID $rmdup_sam_folder $core $mismatch
+$Rscript $r_script $bash_script $filtered_sam_folder $sample_ID $rmdup_sam_folder $core $mismatch
 
 # repeat the rmdup process to remove duplicates based on edit distance of UMI sequence
 echo
@@ -143,7 +158,7 @@ module unload python
 bash_script=$script_path/sci3_rmdup.sh
 filtered_sam_folder=$all_output_folder/rmdup_sam
 rmdup_sam_folder=$all_output_folder/rmdup_sam_2
-$Rscript $R_script $bash_script $filtered_sam_folder $sample_ID $rmdup_sam_folder $core $mismatch
+$Rscript $r_script $bash_script $filtered_sam_folder $sample_ID $rmdup_sam_folder $core $mismatch
 
 ################# split the sam file based on the barcode, and mv the result to the report folder
 sam_folder=$all_output_folder/rmdup_sam_2
@@ -159,7 +174,7 @@ echo cutoff value: $cutoff
 module unload python
 
 bash_script=$script_path/sci3_split.sh
-$Rscript $R_script $bash_script $sam_folder $sample_ID $output_folder $core $barcodes $cutoff
+$Rscript $r_script $bash_script $sam_folder $sample_ID $output_folder $core $barcodes $cutoff
 
 
 cat $output_folder/*sample_list.txt>$output_folder/All_samples.txt
@@ -178,6 +193,9 @@ input_folder=$all_output_folder/sam_splitted
 script=$script_path/sciRNAseq_count.py
 sample_ID=$all_output_folder/barcode_samples.txt
 echo "Start the gene count...."
+
+source activate sci3
+python_path="/home/groups/willhies/anaconda3/envs/sci3/bin"
 $python_path/python $script $gtf_file $input_folder $sample_ID $core
 
 echo "Make the output folder and transfer the files..."

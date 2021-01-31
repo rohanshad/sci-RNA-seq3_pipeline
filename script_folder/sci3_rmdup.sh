@@ -4,8 +4,9 @@ sample=$2
 output_folder=$3
 mismatch=$4
 
-python="/net/shendure/vol1/home/cao1025/anaconda2/bin/python2.7"
-python_script="/net/shendure/vol1/home/cao1025/analysis_script/sci3/rm_dup_barcode_UMI.py"
+source activate sci
+python="/home/groups/willhies/anaconda3/envs/sci/bin/python2.7"
+python_script="/home/users/rshad/sci-RNA-seq3_pipeline/script_folder/rm_dup_barcode_UMI.py"
 
 echo Filtering sample: $sample
 
