@@ -320,3 +320,13 @@ if __name__ == "__main__":
     sample_ID = sys.argv[3]
     core_number = sys.argv[4]
     sciRNA_count_parallel(gtf_file, input_folder, sample_ID, core_number)
+
+    #Creates sparse matrix from outs file
+    path_to_counts = input_folder + "/" + ".count"
+    count_df = pd.read_csv(path_to_counts, header = None)
+    df_wide = count_df.pivot(index=0,columns=1,vlaues=2)
+    output_path = input_folder + "/" + "counts.matrix"
+    df_wide.to_csv(output_path,sep=',',na_rep='')
+
+
+

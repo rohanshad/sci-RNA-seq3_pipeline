@@ -204,8 +204,10 @@ cat $input_folder/*.count > $output_folder/count.MM
 rm $input_folder/*.count
 cat $input_folder/*.report > $output_folder/report.MM
 rm $input_folder/*.report
+cat $input_folder/*.matrix > $output_folder/count_matrix.csv
+rm $input_folder/*.matrix
 mv $input_folder/*_annotate.txt $output_folder/
-echo "All output files are transferred~"
+echo "All output files transferred"
 
 now=$(date)
 echo "Current time : $now"
